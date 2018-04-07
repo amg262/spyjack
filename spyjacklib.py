@@ -149,6 +149,40 @@ class Wp:
         return response
 
 
+
+    def request2(self, url, params=[], cache=False, data=True):
+        """Request an URL with a given parameters and proxy
+
+        url    -- URL to request
+        params -- dictionary with POST variables
+        cache  -- True if you want request to be cached and get a cached version of the request
+        data   -- If false, return request object, else return data. Cached data must be retrived with data=True
+        """
+        if cache and data and self._cache.has_key(url) and len(params) is 0:
+            self.logger.debug("Cached %s %s", url, params)
+            return self._cache[url]
+
+        request = urllib2.Request(url)
+        request.add_header("User-agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1")
+        if self._proxy:
+            proxy_handler = urllib2.ProxyHandler({'http': self._proxy})
+            opener = urllib2.build_opener(proxy_handler)
+        else:
+            opener = urllib2.build_opener()
+        self.logger.debug("Requesting %s %s", url, params)
+        try:
+            response = opener.open(request, urllib.urlencode(params))
+            response_data = response.read()
+        except urllib2.HTTPError:
+            return False
+
+        if cache and data and len(params) is 0:
+            self._cache[url] = response_data
+
+        if data:
+            return response_data
+
+        return response
     # WordPress specific methods
 
     def login(self, username, password):
